@@ -1,26 +1,56 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #FFFFFF;
+    --bg-secondary: #F7F4FC;
+    --primary: #5B2A86;
+    --primary-hover: #4A2170;
+    --primary-soft: #EDE3F7;
+    --accent: #D9A441;
+    --text: #20172B;
+    --text-secondary: #645C72;
+    --border: #E4DEF0;
+    --success: #3E8E5A;
+    --error: #B84A4A;
+  }
+
+  .dark {
+    --bg: #15101F;
+    --bg-secondary: #1E1830;
+    --primary: #A87ED4;
+    --primary-hover: #B993DD;
+    --primary-soft: #2C2340;
+    --accent: #E8C165;
+    --text: #F1ECF8;
+    --text-secondary: #B0A7C2;
+    --border: #332A4A;
+    --success: #5FB37E;
+    --error: #D97070;
   }
 }
 
+@theme {
+  --color-bg: var(--bg);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --color-success: var(--success);
+  --color-error: var(--error);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body), sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), sans-serif;
 }
