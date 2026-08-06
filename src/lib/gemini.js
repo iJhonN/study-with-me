@@ -18,47 +18,64 @@ export const geminiFallbackModel = genAI.getGenerativeModel({
 })
 
 export async function generateContentWithFallback({ moduleTitle, topicName, topicContent, count = 5 }) {
-    const isPortuguese = moduleTitle?.toLowerCase().includes('português') ||
+    const isPortugueseOrReading =
+        moduleTitle?.toLowerCase().includes('português') ||
         topicName?.toLowerCase().includes('interpretação') ||
-        topicName?.toLowerCase().includes('compreensão')
+        topicName?.toLowerCase().includes('compreensão') ||
+        topicName?.toLowerCase().includes('leitura')
 
     const prompt = `
-Você é uma banca examinadora sênior de concursos públicos (Vunesp, FGV, IBFC, Cebraspe).
+Você é uma banca examinadora de elite de concursos públicos (estilo FGV, Vunesp, Cebraspe).
 
-Elabore exatamente ${count} questões de múltipla escolha para:
-- Módulo: ${moduleTitle}
-- Tópico: ${topicName}
+Sua tarefa é criar exatamente ${count} questões para o tópico:
+Módulo: ${moduleTitle}
+Tópico: ${topicName}
 
-PROIBIÇÕES CRÍTICAS (NÃO COMETA ESTES ERROS):
-❌ NUNCA faça perguntas teóricas sobre O QUE É interpretação, coesão, leitura ou pedagogia (ex: NUNCA pergunte "Analisar o texto é exercitar a... A) interpretação").
-❌ NUNCA crie alternativas absurdas ou bobas como "leitura de cópia", "memorização passiva" ou "transcrição ortográfica".
-❌ NUNCA faça perguntas de interpretação sem colocar o TEXTO COMPLETO no enunciado.
+🚨 PROIBIÇÕES ABSOLUTAS E GRAVES 🚨
+1. NUNCA faça perguntas conceituais sobre "o que é ler", "o que é interpretação" ou "o que é coesão".
+2. NUNCA crie opções absurdas como "Apenas memorizar palavras", "Decodificação mecânica", "Transcrição de cópia" ou "Leitura de superfície". Todas as 4 alternativas precisam parecer respostas plausíveis e inteligentes.
+3. NUNCA faça perguntas sobre pedagogia da leitura quando a matéria for Português/Interpretação.
 
-${isPortuguese ? `
-REGRAS OBRIGATÓRIAS PARA PORTUGUÊS / INTERPRETAÇÃO DE TEXTO:
-1. O enunciado DEVE OBRIGATORIAMENTE começar com um TEXTO DE APOIO REAL (mínimo de 2 a 3 parágrafos). Pode ser uma crônica, artigo de opinião, fábula ou notícia.
-2. A pergunta deve EXIGIR que o candidato LEIA o texto e responda sobre a intenção do autor, inferências, substituição de palavras, coesão ou ideia central DO TEXTO FORNECIDO.
-3. Todas as 4 alternativas devem ser frases elaboradas, difíceis, plausíveis e no estilo exato de concurso público.
+${isPortugueseOrReading ? `
+🎯 MODO OBRIGATÓRIO: INTERPRETAÇÃO E GRAMÁTICA PRÁTICA
+Para cada uma das ${count} questões, você DEVE obrigatoriamente:
+1. Criar um TEXTO DE APOIO inédito (crônica, conto, artigo de opinião, crônica jornalística ou poema) com no mínimo 2 a 3 parágrafos complexos.
+2. Fazer uma pergunta prática sobre O TEXTO (ex: inferência, intenção implícita do autor, substituição de conectivos, coesão, figura de linguagem ou sinonímia no contexto).
+3. Criar distratores que pareçam corretos (ex: extrapolação sutil do texto, contradição imperceptível em uma palavra, inversão de causa e efeito).
+
+EXEMPLO DO NÍVEL EXIGIDO:
+Enunciado:
+"Leia o texto a seguir:
+'A aceleração da vida urbana impõe um ritmo em que a pausa é vista quase como um ato de transgressão. Não se trata apenas da busca por produtividade ininterrupta, mas de uma alteração perceptiva: o indivíduo passa a mensurar seu valor social pela quantidade de estímulos a que responde simultaneamente. O silêncio, nesse cenário, deixa de ser ausência de som para se tornar um incômodo intolerável.'
+
+Considerando os recursos coesivos e o sentido global do texto, assinale a opção correta:"
+
+Opções:
+A) O vocábulo 'transgressão' indica que a pausa no meio urbano é legalmente punida pela sociedade contemporânea.
+B) A expressão 'mensurar seu valor social' sugere que a validação do indivíduo está condicionada ao acúmulo constante de tarefas.
+C) O termo 'nesse cenário' estabelece uma relação de temporalidade futura em relação aos hábitos urbanos descritos.
+D) A palavra 'intolerável' introduz uma tese de que o silêncio deve ser promovido como meta de produtividade.
 ` : `
-REGRAS PARA DEMAIS MATÉRIAS:
-1. Questões diretas de concurso sobre a legislação/conceito.
-2. Distratores exigentes (pegadinhas de banca, trocas de termos técnicos).
+🎯 MODO OBRIGATÓRIO: CONHECIMENTOS ESPECÍFICOS / LEGISLAÇÃO
+1. Questões de múltipla escolha focadas na letra da lei ou autores do edital.
+2. Alternativas longas e elaboradas, com pegadinhas de prazos, inversões de conceitos e exceções da regra.
 `}
 
-Sua resposta DEVE SER um objeto JSON com a chave "questions" no seguinte formato:
+FORMATO DE SAÍDA EXIGIDO (JSON PURE):
+Sua resposta DEVE ser um objeto JSON com a chave "questions" contendo o array de objetos:
 {
   "questions": [
     {
-      "enunciado": "Leia o texto a seguir:\\n\\n\\"[Escreva aqui um texto interessante de 2 a 3 parágrafos sobre qualquer assunto de interesse geral, literatura, meio ambiente, tecnologia ou sociedade]\\"\\n\\nDe acordo com o texto lido, assinale a alternativa correta em relação à ideia principal defendida pelo autor:",
+      "enunciado": "Texto base completo + pergunta",
       "opcoes": [
-        "Distrator difícil A (parece correto, mas altera um detalhe do texto)",
-        "Alternativa Correta B (reflete com precisão a ideia do texto)",
-        "Distrator difícil C (menciona algo do texto, mas extrapola a conclusão)",
-        "Distrator difícil D (contradiz suavemente o segundo parágrafo)"
+        "Opção A plausível e longa",
+        "Opção B correta e fundamentada",
+        "Opção C distrator difícil",
+        "Opção D distrator com pegadinha sutil"
       ],
       "resposta_correta": 1,
-      "explicacao": "Explicação detalhada de por que a B está certa e onde está o erro sutil das outras.",
-      "dica": "Dica sobre o parágrafo chave para releitura."
+      "explicacao": "Análise detalhada apontando o erro sutil das outras opções e provando a correta.",
+      "dica": "Dica sutil que direcione a releitura sem dar a resposta."
     }
   ]
 }
@@ -78,20 +95,20 @@ Sua resposta DEVE SER um objeto JSON com a chave "questions" no seguinte formato
             const parsed = JSON.parse(text)
             return parsed.questions || parsed
         } catch (fallbackError) {
-            console.error('❌ Ambos os modelos falharam. Usando Mock de segurança.')
+            console.error('❌ Erro na geração da IA. Retornando mock de contingência.')
 
             return [
                 {
-                    enunciado: "Leia o texto a seguir:\n\n\"A aceleração do cotidiano contemporâneo muitas vezes nos priva da contemplação e da reflexão crítica. Vivemos em uma era em que a velocidade da informação é confundida com a profundidade do conhecimento. No entanto, a verdadeira aprendizagem exige tempo, pausa e digestão das ideias, aspectos frequentemente negligenciados na dinâmica das redes digitais.\"\n\nCom base no texto, infere-se que o autor:",
+                    enunciado: "Leia o texto a seguir:\n\n\"A aceleração da vida urbana impõe um ritmo em que a pausa é vista quase como um ato de transgressão. Não se trata apenas da busca por produtividade ininterrupta, mas de uma alteração perceptiva: o indivíduo passa a mensurar seu valor social pela quantidade de estímulos a que responde simultaneamente.\"\n\nConsiderando a estruturação das ideias no texto, infere-se que o autor:",
                     opcoes: [
-                        "Condena o uso de tecnologia e defende o retorno aos métodos tradicionais de ensino.",
-                        "Sustenta que a rapidez no acesso à informação não garante a assimilação crítica do conhecimento.",
-                        "Afirma que as redes digitais eliminaram completamente a capacidade de aprendizagem humana.",
-                        "Sugere que a contemplação é um obstáculo para o desenvolvimento do pensamento contemporâneo."
+                        "Equipara a pausa no cotidiano a uma conduta de valorização pessoal no meio urbano.",
+                        "Sustenta que a validação do indivíduo contemporâneo está atrelada ao excesso de estímulos.",
+                        "Defende que a busca por produtividade é o único fator responsável pela perda de concentração.",
+                        "Argumenta que a alteração perceptiva mencionada decorre da falta de tecnologia nas cidades."
                     ],
                     resposta_correta: 1,
-                    explicacao: "O autor contrapõe a velocidade da informação com a profundidade do conhecimento, indicando que ter acesso rápido não significa ter assimilado criticamente o conteúdo.",
-                    dica: "Observe o trecho onde o autor compara 'velocidade da informação' com 'profundidade do conhecimento'."
+                    explicacao: "O texto afirma explicitamente que o indivíduo mensura seu valor pela quantidade de estímulos a que responde simultaneamente.",
+                    dica: "Observe a relação de causa estabelecida logo após o trecho sobre alteração perceptiva."
                 }
             ]
         }
