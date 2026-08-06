@@ -23,23 +23,30 @@ export async function generateContentWithFallback({ moduleTitle, topicName, topi
     // Identifica se a matéria exige foco gramatical/interpretativo puro
     const isPortuguese = moduleTitle?.toLowerCase().includes('português') || topicName?.toLowerCase().includes('interpretação')
 
-    // Prompt enriquecido com as correções de qualidade e formato exigidos
+    // Prompt enriquecido com maior variedade e obrigatoriedade de textos de apoio
     const prompt = `
-Você é um banca examinadora sênior de concursos públicos na área de Educação (estilo Vunesp, FGV, IBFC e Cebraspe).
+Você é uma banca examinadora sênior de concursos públicos na área de Educação (estilo Vunesp, FGV, IBFC e Cebraspe).
 
 Elabore exatamente ${count} questões de múltipla escolha para o seguinte tópico:
 - Módulo: ${moduleTitle}
 - Tópico: ${topicName}
 - Conteúdo de Referência: ${topicContent || 'Conteúdo geral do edital'}
 
-REGRAS OBRIGATÓRIAS DE QUALIDADE:
-1. DIFICULDADE E DISTRATORES:
+REGRAS OBRIGATÓRIAS DE QUALIDADE E DIVERSIFICAÇÃO DE TEXTOS:
+
+1. REQUISITO DE TEXTOS BASE (MUITO IMPORTANTE):
+   - Se o tópico for de COMPREENSÃO, INTERPRETAÇÃO DE TEXTO ou SINTAXE/TEXTUAL, TODAS as questões ou grupos de questões DEVEM conter um texto de apoio completo no início do enunciado.
+   - Varie a tipologia dos textos gerados. Alterne entre:
+     * Crônicas ou microcontos literários;
+     * Poemas ou trechos de obras clássicas/contemporâneas;
+     * Artigos de opinião, notícias ou fragmentos de ensaios;
+     * Fábulas, tirinhas descritas ou textos argumentativos sobre temas atuais.
+   - O texto base deve ter extensão adequada (entre 1 e 3 parágrafos bem estruturados) para permitir perguntas reais de inferência, coesão, figura de linguagem ou intenção do autor.
+   - Formate o enunciado deixando o texto base bem destacado no início entre aspas ou com a indicação "Leia o texto a seguir para responder à questão:".
+
+2. DIFICULDADE E DISTRATORES:
    - Nível real de prova de concurso público.
    - As alternativas incorretas NÃO podem ser óbvias. Crie distratores plausíveis com pegadinhas sutis de banca, ambiguidades e inversões de regras.
-
-2. TEXTO DE APOIO (OBRIGATÓRIO PARA INTERPRETAÇÃO):
-   - Se a questão for de COMPREENSÃO OU INTERPRETAÇÃO DE TEXTO, insira obrigatoriamente um texto curto (poema, crônica, notícia ou trecho literário) no início do enunciado.
-   - Jamais faça perguntas do tipo "De acordo com o texto..." sem fornecer o texto completo no enunciado.
 
 3. FOCO DA MATÉRIA:
    ${isPortuguese ? `
@@ -52,7 +59,7 @@ Sua resposta DEVE SER um objeto JSON estritamente com a chave "questions" conten
 {
   "questions": [
     {
-      "enunciado": "Texto base (se houver) + pergunta",
+      "enunciado": "Leia o texto abaixo:\\n\\n\\"[Texto completo de 1 a 3 parágrafos aqui...]\\"\\n\\nCom base no texto lido, assinale a alternativa correta...",
       "opcoes": ["Opção A", "Opção B", "Opção C", "Opção D"],
       "resposta_correta": 0, // Índice numérico de 0 a 3 indicando a opção correta
       "explicacao": "Explicação detalhada da resposta e o motivo de as outras estarem erradas.",
@@ -81,16 +88,16 @@ Sua resposta DEVE SER um objeto JSON estritamente com a chave "questions" conten
             return [
                 {
                     id: "mock-dev-1",
-                    enunciado: "[MOCK DEV] Em relação à interpretação de textos e à coesão textual em provas de concurso, assinale a alternativa correta:",
+                    enunciado: "Leia o texto a seguir para responder à questão:\n\n\"O tempo é um tecido sutil tecido pelas nossas próprias escolhas. Ao caminhar pelas ruas da cidade antiga, percebe-se que as pedras do calçamento guardam os passos daqueles que vieram antes, mas não determinam o rumo daqueles que virão depois.\"\n\nCom base no texto, infere-se que o autor defende que:",
                     opcoes: [
-                        "A anáfora retoma um termo já citado anteriormente no texto.",
-                        "A catáfora retoma obrigatoriamente um termo do parágrafo anterior.",
-                        "Os conectivos adversativos expressam ideia de adição de argumentos.",
-                        "A pontuação não interfere no sentido ou na interpretação do texto."
+                        "O passado estabelece os limites inegociáveis para o futuro.",
+                        "As escolhas individuais moldam o tempo, mantendo a autonomia sobre o futuro.",
+                        "A arquitetura urbana é o principal fator determinante da história.",
+                        "As escolhas humanas são irrelevantes diante da passagem dos anos."
                     ],
-                    resposta_correta: 0,
-                    explicacao: "A anáfora é o mecanismo coesivo que faz referência a um termo presente anteriormente no texto. Resposta mockada local para testes durante erro de quota.",
-                    dica: "Lembre-se da diferença entre referência anafórica (antes) e catafórica (depois)."
+                    resposta_correta: 1,
+                    explicacao: "O texto afirma que as pedras 'guardam os passos', mas 'não determinam o rumo', indicando que o indivíduo mantém sua autonomia sobre as escolhas do futuro.",
+                    dica: "Preste atenção ao contraste estabelecido entre guardar os passos e não determinar o rumo."
                 }
             ]
         }
