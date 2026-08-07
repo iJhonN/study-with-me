@@ -9,6 +9,16 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 const apiKey = process.env.GEMINI_API_KEY || ''
 const genAI = new GoogleGenerativeAI(apiKey)
 
+// 🔖 Versão do prompt de geração. Suba esse número (v3, v4...) toda vez que
+// o texto do prompt mudar de forma relevante. O código que salva perguntas
+// novas em `questions` deve gravar essa versão junto, e o código que busca
+// perguntas para REAPROVEITAR (banco de perguntas / cache) deve filtrar por
+// essa mesma versão — assim perguntas geradas com prompt antigo (e possíveis
+// bugs já corrigidos) param de ser servidas automaticamente, sem precisar
+// apagar nada manualmente no banco. Ver fix-cache-perguntas.sql para o SQL
+// de migração da coluna `prompt_version` na tabela `questions`.
+export const PROMPT_VERSION = 'v2-interpretacao-fix'
+
 export const geminiModel = genAI.getGenerativeModel({
     model: 'gemini-3.6-flash',
     generationConfig: {
