@@ -140,9 +140,10 @@ completamente qualquer material de referência pedagógico do tópico — aqui o
 assunto do texto é livre.
 
 Para cada uma das ${count} questões, você DEVE obrigatoriamente:
-1. Criar um TEXTO DE APOIO inédito (crônica, conto, artigo de opinião, crônica jornalística ou poema) com no mínimo 2 a 3 parágrafos complexos, sobre um assunto do cotidiano adulto — sugestão de tema para esta leva de questões: "${temaSorteado}" (varie o ângulo entre as ${count} questões, não escreva ${count} textos sobre exatamente a mesma coisa).
-2. Fazer uma pergunta prática sobre O TEXTO (ex: inferência, intenção implícita do autor, substituição de conectivos, coesão, figura de linguagem ou sinonímia no contexto).
-3. Criar distratores que pareçam corretos (ex: extrapolação sutil do texto, contradição imperceptível em uma palavra, inversão de causa e efeito).
+1. Escrever o enunciado EXATAMENTE neste formato, começando com "Leia o texto a seguir:" seguido do texto entre aspas, e só depois a pergunta — igual ao exemplo abaixo. Uma questão sem esse texto entre aspas está ERRADA e será rejeitada.
+2. O texto entre aspas deve ser uma crônica, conto, artigo de opinião ou poema inédito, com no mínimo 2 a 3 parágrafos complexos, sobre um assunto do cotidiano adulto — sugestão de tema para esta leva de questões: "${temaSorteado}" (varie o ângulo entre as ${count} questões, não escreva ${count} textos sobre exatamente a mesma coisa).
+3. Fazer uma pergunta prática sobre O TEXTO (ex: inferência, intenção implícita do autor, substituição de conectivos, coesão, figura de linguagem ou sinonímia no contexto).
+4. Criar distratores que pareçam corretos (ex: extrapolação sutil do texto, contradição imperceptível em uma palavra, inversão de causa e efeito).
 
 EXEMPLO DO NÍVEL EXIGIDO:
 Enunciado:
@@ -195,22 +196,53 @@ Sua resposta DEVE ser um objeto JSON com a chave "questions" contendo o array de
 }
 `
 
-    async function tentarModelo(modelo) {
-        const result = await modelo.generateContent(prompt)
+    // ✅ Validação de segurança: como já vimos o modelo ignorar a instrução em
+    // texto puro, checamos no código se a questão de Interpretação realmente
+    // veio no formato certo (com texto de apoio entre aspas) e sem vocabulário
+    // de sala de aula/Educação Infantil vazando pra dentro dela.
+    const PALAVRAS_PROIBIDAS_INTERPRETACAO = [
+        'professor', 'professora', 'docente', 'aluno', 'aluna', 'alunos', 'alunas',
+        'criança', 'crianças', 'sala de aula', 'educação infantil', 'pedagóg',
+        'livro ilustrado', 'turma escolar', 'creche', 'pré-escola',
+    ]
+
+    function questaoValidaParaInterpretacao(questao) {
+        const textoCompleto = `${questao.enunciado} ${questao.opcoes.join(' ')}`.toLowerCase()
+        const temPalavraProibida = PALAVRAS_PROIBIDAS_INTERPRETACAO.some(p => textoCompleto.includes(p))
+        const temTextoDeApoio = (questao.enunciado.match(/["“]/g) || []).length >= 2 && questao.enunciado.length > 350
+        return !temPalavraProibida && temTextoDeApoio
+    }
+
+    async function tentarModelo(modelo, promptAtual, tentativa = 1) {
+        const result = await modelo.generateContent(promptAtual)
         const text = await result.response.text()
         const parsed = JSON.parse(text)
-        const questoes = parsed.questions || parsed
-        // Embaralha a posição da resposta certa no código — não depende do modelo obedecer a regra 4
-        return questoes.map(embaralharAlternativas)
+        let questoes = (parsed.questions || parsed).map(embaralharAlternativas)
+
+        if (isPortugueseOrReading) {
+            const invalidas = questoes.filter(q => !questaoValidaParaInterpretacao(q))
+            if (invalidas.length > 0 && tentativa < 3) {
+                console.warn(`⚠️ ${invalidas.length} questão(ões) de Interpretação sem texto de apoio ou com contexto pedagógico vazado. Regenerando (tentativa ${tentativa + 1})...`)
+                const promptReforcado = `${promptAtual}
+
+🚫 A TENTATIVA ANTERIOR FALHOU NA VALIDAÇÃO: sua resposta não trouxe um texto de apoio entre aspas com no mínimo 2-3 parágrafos, e/ou mencionou termos proibidos como "professor", "criança", "aluno", "sala de aula" ou "educação infantil". Gere as ${count} questões NOVAMENTE, cada uma OBRIGATORIAMENTE no formato "Leia o texto a seguir: \\"[crônica/conto/artigo de opinião de 2-3 parágrafos sobre ${temaSorteado}]\\" [pergunta sobre o texto]". Nenhuma menção a contexto escolar/infantil em nenhuma parte da questão.`
+                return tentarModelo(modelo, promptReforcado, tentativa + 1)
+            }
+            // Depois de 3 tentativas, filtra o que ainda estiver fora do padrão —
+            // melhor entregar menos questões do que entregar uma errada.
+            questoes = questoes.filter(questaoValidaParaInterpretacao)
+        }
+
+        return questoes
     }
 
     try {
-        return await tentarModelo(geminiModel)
+        return await tentarModelo(geminiModel, prompt)
     } catch (primaryError) {
         console.warn('⚠️ Falha no modelo primário. Tentando fallback...', primaryError)
 
         try {
-            return await tentarModelo(geminiFallbackModel)
+            return await tentarModelo(geminiFallbackModel, prompt)
         } catch (fallbackError) {
             // 🔴 Importante: registre isso de verdade (ex: em uma tabela de logs ou serviço
             // de monitoramento). Se as duas chamadas estiverem falhando com frequência,
