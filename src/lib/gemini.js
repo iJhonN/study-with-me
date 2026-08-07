@@ -86,9 +86,26 @@ export async function generateContentWithFallback({
     const area = detectarArea(moduleTitle)
     const tecnicas = TECNICAS_DISTRATOR[area] || TECNICAS_DISTRATOR.padrao
 
-    const blocoConteudo = topicContent
+    // ⚠️ Para Interpretação de texto, o material de referência do tópico costuma
+    // descrever o assunto do ponto de vista pedagógico (ex: "como a criança
+    // desenvolve a interpretação de textos"), porque o site é focado em Educação
+    // Infantil. Se esse material entrar no prompt como "base factual, não invente
+    // fora daqui", o modelo obedece — e cria textos/perguntas sobre a CRIANÇA
+    // interpretando, em vez de testar a interpretação da PRÓPRIA candidata como
+    // leitora adulta. Por isso o bloco de conteúdo é ignorado propositalmente
+    // aqui: Interpretação é uma prova de habilidade de leitura genérica, não de
+    // conhecimento pedagógico — não deve depender do material do tópico.
+    const blocoConteudo = (topicContent && !isPortugueseOrReading)
         ? `\n📚 MATERIAL DE REFERÊNCIA DO TÓPICO (use isso como base factual — não invente fora daqui):\n"""\n${topicContent}\n"""\n`
         : ''
+
+    const TEMAS_INTERPRETACAO = [
+        'tecnologia e redes sociais no dia a dia', 'meio ambiente e sustentabilidade',
+        'trabalho e rotina urbana', 'relações familiares e amizade', 'viagens e turismo',
+        'saúde e bem-estar', 'arte, música ou cinema', 'ciência e curiosidades do cotidiano',
+        'economia doméstica e consumo', 'memória, infância e nostalgia (sob a ótica adulta, não pedagógica)',
+    ]
+    const temaSorteado = TEMAS_INTERPRETACAO[Math.floor(Math.random() * TEMAS_INTERPRETACAO.length)]
 
     const blocoEvitarRepeticao = perguntasExistentes.length > 0
         ? `\n🔁 Já existem estas perguntas para este tópico no banco — NÃO repita o mesmo enunciado nem a mesma pegadinha:\n${perguntasExistentes.slice(0, 10).map(p => `- ${p}`).join('\n')}\n`
@@ -112,8 +129,18 @@ ${tecnicas.map(t => `   - ${t}`).join('\n')}
 
 ${isPortugueseOrReading ? `
 🎯 MODO OBRIGATÓRIO: INTERPRETAÇÃO E GRAMÁTICA PRÁTICA
+
+🚫 PROIBIÇÃO CRÍTICA: esta questão testa a interpretação de texto da PRÓPRIA
+candidata como leitora adulta — NÃO é uma questão de pedagogia ou de
+desenvolvimento infantil. O texto de apoio e a pergunta NUNCA podem ser sobre:
+"como a criança interpreta/aprende a ler", "desenvolvimento da leitura infantil",
+"papel do professor na alfabetização" ou qualquer variação disso. Isso pertence a
+outro módulo (Aprendizagem/Desenvolvimento Infantil), não a este. Ignore
+completamente qualquer material de referência pedagógico do tópico — aqui o
+assunto do texto é livre.
+
 Para cada uma das ${count} questões, você DEVE obrigatoriamente:
-1. Criar um TEXTO DE APOIO inédito (crônica, conto, artigo de opinião, crônica jornalística ou poema) com no mínimo 2 a 3 parágrafos complexos.
+1. Criar um TEXTO DE APOIO inédito (crônica, conto, artigo de opinião, crônica jornalística ou poema) com no mínimo 2 a 3 parágrafos complexos, sobre um assunto do cotidiano adulto — sugestão de tema para esta leva de questões: "${temaSorteado}" (varie o ângulo entre as ${count} questões, não escreva ${count} textos sobre exatamente a mesma coisa).
 2. Fazer uma pergunta prática sobre O TEXTO (ex: inferência, intenção implícita do autor, substituição de conectivos, coesão, figura de linguagem ou sinonímia no contexto).
 3. Criar distratores que pareçam corretos (ex: extrapolação sutil do texto, contradição imperceptível em uma palavra, inversão de causa e efeito).
 
